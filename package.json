@@ -1,6 +1,6 @@
 {
   "name": "httpsqs.js",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "The node client for HTTPSQS.",
   "main": "index.js",
   "scripts": {
@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/52cik/httpsqs.js#readme",
   "dependencies": {
+    "agentkeepalive": "^4.0.0",
     "got": "^9.3.2"
   },
   "devDependencies": {
