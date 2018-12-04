@@ -1,3 +1,12 @@
+/// <reference types="node" />
+import http from 'http';
+interface KeepAliveOptions extends http.AgentOptions {
+    keepAlive?: boolean;
+    freeSocketTimeout?: number;
+    freeSocketKeepAliveTimeout?: number;
+    timeout?: number;
+    socketActiveTTL?: number;
+}
 interface HttpsqsOption {
     /** ip 或 域名 */
     host?: string;
@@ -9,10 +18,13 @@ interface HttpsqsOption {
     name?: string;
     /** 授权密码 */
     auth?: string;
+    /** keep-alive */
+    keepAlive: boolean | KeepAliveOptions;
 }
 declare class HTTPSQS {
     private opts;
     private url;
+    private agent;
     constructor(opts: HttpsqsOption);
     private fetch;
     /**
@@ -23,21 +35,11 @@ declare class HTTPSQS {
     /**
      * 从一个队列中取出文本信息
      */
-    get(hasPos?: boolean): Promise<string | false | {
-        body: string;
-        pos: number | undefined;
-    }>;
-    /**
-     * 从一个队列中取出文本信息和当前队列读取点Pos
-     */
-    gets(): Promise<string | false | {
-        body: string;
-        pos: number | undefined;
-    }>;
+    get(): Promise<string | false>;
     /**
      * 查看队列状态
      */
-    status(): Promise<string | false>;
+    status(josn?: boolean): Promise<string | false>;
     /**
      * 查看指定队列位置点的内容
      * @param pos

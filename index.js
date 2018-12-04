@@ -3,6 +3,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 const got_1 = __importDefault(require("got"));
+const agentkeepalive_1 = __importDefault(require("agentkeepalive"));
+const boolean = (value) => value === false || value === true;
 class HTTPSQS {
     constructor(opts) {
         this.opts = Object.assign({
@@ -10,7 +12,18 @@ class HTTPSQS {
             port: 1218,
             // charset: 'utf-8',
             name: '',
+            // auth: '',
+            keepAlive: false,
         }, opts);
+        // 开启 keep-alive
+        if (this.opts.keepAlive) {
+            if (boolean(this.opts.keepAlive)) {
+                this.agent = new agentkeepalive_1.default();
+            }
+            else {
+                this.agent = new agentkeepalive_1.default(this.opts.keepAlive);
+            }
+        }
         this.url = `http://${this.opts.host}:${this.opts.port}`;
     }
     fetch({ opt, data, pos, num }) {
@@ -23,16 +36,7 @@ class HTTPSQS {
             pos,
             num,
         };
-        return got_1.default(this.url, { query }).then(res => {
-            let position;
-            if (opt === 'get') {
-                position = parseInt(res.headers.pos, 10);
-            }
-            return {
-                body: res.body,
-                pos: position,
-            };
-        });
+        return got_1.default(this.url, { query, agent: this.agent });
     }
     /**
      * 将文本信息放入一个队列
@@ -48,25 +52,21 @@ class HTTPSQS {
     /**
      * 从一个队列中取出文本信息
      */
-    async get(hasPos = false) {
-        const res = await this.fetch({ opt: 'get' });
-        if (res.body === 'HTTPSQS_GET_END' || res.body === 'HTTPSQS_ERROR') {
+    async get() {
+        const { body } = await this.fetch({ opt: 'get' });
+        if (body === 'HTTPSQS_GET_END' ||
+            body === 'HTTPSQS_ERROR' ||
+            body === 'HTTPSQS_AUTH_FAILED') {
             return false;
         }
-        return hasPos ? res : res.body;
-    }
-    /**
-     * 从一个队列中取出文本信息和当前队列读取点Pos
-     */
-    gets() {
-        return this.get(true);
+        return body;
     }
     /**
      * 查看队列状态
      */
-    async status() {
-        const { body } = await this.fetch({ opt: 'status_json' });
-        if (body === 'HTTPSQS_ERROR') {
+    async status(josn = false) {
+        const { body } = await this.fetch({ opt: josn ? 'status_json' : 'status' });
+        if (body === 'HTTPSQS_ERROR' || body === 'HTTPSQS_AUTH_FAILED') {
             return false;
         }
         return body;
@@ -77,7 +77,7 @@ class HTTPSQS {
      */
     async view(pos) {
         const { body } = await this.fetch({ opt: 'view', pos });
-        if (body === 'HTTPSQS_ERROR') {
+        if (body === 'HTTPSQS_ERROR' || body === 'HTTPSQS_AUTH_FAILED') {
             return false;
         }
         return body;
